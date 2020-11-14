@@ -6,15 +6,8 @@ import nacl
 import hashlib
 from backports.pbkdf2 import pbkdf2_hmac # For generating the a proper 32 byte password from the seed
 
-def blake2b(data_key):
-    """
-    Hash the given data_key using the blake2b algorithm to generate a 32bytes(256bits) hash
-    Args:
-        data_key(str): This is the data_key that will be used to retrieve entries from the registry
-    """
-    pass
 
-def encode_num(num):
+def encode_num(num:int) -> list:
     """
     This function is based on the encodeNumber function on the crypto.ts file
     Args:
@@ -26,8 +19,36 @@ def encode_num(num):
     encoded_num = list(_bytes)
     return encode_num
 
+def encode_string(text:str) -> list:
+    """
+    This function is based on the encodeString function on the crypto.ts file
+    Args:
+        text(str): The string that needs to be encoded
+    Returns:
+        encoded_text(list): A list of ints which represent the string
+    """
+    encoded_num = encode_num(len(text))
+    encoded_text = encoded_num + list(text.encode())
+    return encoded_text
 
-def genKeyPairFromSeed(seed):
+def hash_data_key(data_key:str) -> str:
+    """
+        This function is based on the hashDataKey function in crypto.ts file.
+        given a data key, encode it into a list of ints and hash the entire list using
+        blake2b algo, and return the hex string of the hash
+        Args:
+            data_key(str): The data_key that needs to be hashed
+        Returns:
+            hashed_data_key(str): The hash of the data_key in string form
+    """
+    encoded_data_key = encode_string(data_key)
+    h = hashlib.blake2b()
+	# import to convert the list of ints to bytes
+	h.update(bytes(encoded_data_key))
+	return h.hexdigest()
+
+
+def genKeyPairFromSeed(seed:str) -> tuple:
     """
     Generate a Public key, Private Key pair from the seed using Ed25519 Algorithm
     Args:
