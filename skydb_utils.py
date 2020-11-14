@@ -1,10 +1,13 @@
 from crypto import hash_data_key, hash_all
 from crypto import encode_string,encode_num
+
 import requests
+import json
+import nacl.bindings
 
 class RegistryEntry(object):
 
-	def __init__(self, public_key:bytes, private_key:bytes):
+	def __init__(self, public_key:bytes, private_key:bytes, endpoint_url:str="https://siasky.net/skynet/registry"):
 		"""
 		Args:
 			private_key(bytes), public_key(bytes): These two keys are responsible to sign and verify the 
@@ -14,6 +17,7 @@ class RegistryEntry(object):
 		
 		self._pk = public_key
 		self._sk = private_key
+		self._endpoint_url = endpoint_url
 		# This below variable refers to max size of the signed message
 		self._max_len = 64
 
@@ -26,11 +30,11 @@ class RegistryEntry(object):
 
 		"""
 		# First sign the data
-		hash_entry = hash_all(
+		hash_entry = hash_all((
 				hash_data_key(data_key), 
 				encode_string(data),
 				encode_num(revision),
-			)
+			))
 		raw_signed = nacl.bindings.crypto_sign(hash_entry, self._sk)
 
 
@@ -49,6 +53,11 @@ class RegistryEntry(object):
 				'data': _data,
 				'signature': _signature,
 			}
+		print(json.dumps(post_data))
+
+		req = requests.post(self._endpoint_url, data=json.dumps(post_data))
+		print(req.json())
+
 
 	def get_entry(self, data_key:str) -> str:
 		pass

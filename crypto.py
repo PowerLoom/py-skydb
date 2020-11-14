@@ -18,7 +18,7 @@ def encode_num(num:int) -> list:
 	"""
 	_bytes = (num).to_bytes(8, byteorder='little')
 	encoded_num = list(_bytes)
-	return encode_num
+	return encoded_num
 
 def encode_string(text:str) -> list:
 	"""
@@ -43,7 +43,7 @@ def hash_data_key(data_key:str) -> str:
 			hashed_data_key(str): The hash of the data_key in string form
 	"""
 	encoded_data_key = encode_string(data_key)
-	h = hashlib.blake2b()
+	h = hashlib.blake2b(digest_size=32)
 	# import to convert the list of ints to bytes
 	h.update(bytes(encoded_data_key))
 	return h.hexdigest()
@@ -56,7 +56,14 @@ def hash_all(data:list):
 	"""
 	h = hashlib.blake2b()
 	for d in data:
-		h.update(bytes(d))
+		if isinstance(d, str):
+			h.update(d.encode())
+
+		elif isinstance(d, list):
+			h.update(bytes(d))
+
+		else:
+			raise ValueError("An invalid type of data has been passed. This function only processed string and lists")
 	return h.digest()
 
 
