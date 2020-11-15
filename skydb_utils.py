@@ -58,10 +58,8 @@ class RegistryEntry(object):
 		if response.status_code == 204:
 			print("Data Successfully stored in the Registry")
 		else:
-			raise Exception("The Registry Data was Invalid. Please do recheck that you are not using\
-					the same revision number to update the data. Also make sure that the keys used to\
-					sign the message come from the same seed value")
-
+			print(response.text)
+			raise Exception("The Registry Data was Invalid. Please do recheck that you are not using the same revision number to update the data. Also make sure that the keys used to sign the message come from the same seed value. Also make sure that registry data is not too big")
 
 	def get_entry(self, data_key:str) -> str:
 		"""
