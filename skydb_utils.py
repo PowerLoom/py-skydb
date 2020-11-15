@@ -74,4 +74,6 @@ class RegistryEntry(object):
 		# The below line will raise requests.exceptions.Timeout exception if it was unable to fetch the data 
 		# in two seconds.
 		response = requests.get(self._endpoint_url, params=querry, timeout=2)
-		return response.text
+		response_data = json.loads(response.text)['data']
+		response_data = bytearray.fromhex(response_data).decode()
+		return response_data

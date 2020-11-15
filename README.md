@@ -9,7 +9,6 @@ import json
 pk, sk = genKeyPairFromSeed("Some Random Seed TEXT")
 re = RegistryEntry(pk, sk)
 re.set_entry(data_key="KEY1", data="Some data", revision=1)
-data = json.loads(re.get_entry(data_key="KEY1"))['data']
-data = bytearray.fromhex(data).decode()
+data = re.get_entry(data_key="KEY1")
 print(data)
 ```
