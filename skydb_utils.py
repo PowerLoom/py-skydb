@@ -53,13 +53,21 @@ class RegistryEntry(object):
 				'data': _data,
 				'signature': _signature,
 			}
-		print(json.dumps(post_data))
 
 		response = requests.post(self._endpoint_url, data=json.dumps(post_data))
 		print(response.status_code)
-		print(response.text)
 
 
 	def get_entry(self, data_key:str) -> str:
-		pass
-
+		"""
+			- Get the entry given the dataKey
+		"""
+		publickey = f"ed25519:{self._pk.hex()}"
+		datakey = hash_data_key(data_key)
+		querry = {
+					'publickey': publickey,
+					'datakey': datakey,
+				}
+		print(json.dumps(querry))
+		response = requests.get(self._endpoint_url, params=querry)
+		return response.text
