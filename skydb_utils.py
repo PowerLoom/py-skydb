@@ -104,10 +104,12 @@ class SkydbTable(object):
 
 		return row
 
-	def _fetch(self, condition:dict, work_index:int, n_skip:int):
+	def _fetch(self, condition:dict, work_index:int, n_skip:int, mode:int):
 		""" 
 		This function is meant to be run as a thread.
-		It will check for conditions an initiate flags once the row is found.
+		It will check for conditions an initiate flags once the row is found in case of fetch_one(mode=0)
+		or will update the fetched_data dictionary incase of fecth_all(mode=1)
+
 		"""
 			
 		keys_satisfy = False
@@ -128,23 +130,37 @@ class SkydbTable(object):
 			if not keys_satisfy:
 				work_index += n_skip
 			else:
-				self.fetch_lock.acquire()
-				if not self.found:
-					self.found = True
-					self.fetch_index = work_index
-				self.fetch_lock.release()	
+				if mode == 0:
+					self.fetch_lock.acquire()
+					if not self.found:
+						self.found = True
+						self.fetch_index = work_index
+					self.fetch_lock.release()	
+				elif mode == 1:
+					self.fetched_rows[work_index] = self.fetch_row(row_index=work_index)
 
-	def fetch_one(self, condition:dict, num_workers=2) -> dict:
+
+	def fetch(self, condition:dict, mode:int=0, num_workers:int=2) -> dict:
 		"""
-		This function will fetch a row which satifies the condition. The condition can be something like
-		{'c1':'data 1', 'c2':'JeJa'}. The first row with those values will be returned
+		This function will fetch a row or bunch of rows, which satifies the condition. The condition can be something like
+		{'c1':'data 1', 'c2':'JeJa'}. The row(s) with those values will be returned
 
 		Args:
 			condition(dict): This variable is basically the values that will be in the row 
 			that you want to fetch
+			
+			mode(int): This value represents whether you want the first row which matches the conditions
+			or all rows the rows which match the condition. mode=0 for fetching a single row and mode=1 
+			for fetching 1 or more rows.
+
+			num_workers(int): This value represents the number of threads that will be assigned to search 
+			for the rows
 		"""
 		# Make sure the condition is not empty
 		assert len(condition) > 0, "The condition should not be empty"
+
+		# Make sure the mode is valid
+		assert mode in range(0,2), "Invalid mode. It can be either 0(fetch_one) or 1(fetch_all)"
 
 		# Check if the keys are valid column names
 		for k in condition.keys():
@@ -152,10 +168,14 @@ class SkydbTable(object):
 
 	
 		self.found = False
-		self.fetch_index = -1
-		self.fetch_lock = threading.Lock()
+		if mode == 0:
+			self.fetch_index = -1
+			self.fetch_lock = threading.Lock()
+		elif mode == 1:
+			self.fetched_rows = {}
 
-		threads = [threading.Thread(target=self._fetch, args=(condition,i,num_workers))\
+
+		threads = [threading.Thread(target=self._fetch, args=(condition, i, num_workers, mode))\
 				for i in range(num_workers)]
 
 		for t in threads:
@@ -164,10 +184,15 @@ class SkydbTable(object):
 		for t in threads:
 			t.join()
 
-		if self.found == False:
+		if mode == 1:
+			return self.fetched_rows
+
+		if mode == 0 and self.found == False:
 			return {}
 		else:
 			return self.fetch_row(row_index=self.fetch_index)
+
+
 
 
 class RegistryEntry(object):
