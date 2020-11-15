@@ -235,7 +235,7 @@ class RegistryEntry(object):
 			- make sure that the keys used to sign the message come from the same seed value.
 			""")
 
-		def get_entry(self, data_key:str, timeout:int=2) -> str:
+	def get_entry(self, data_key:str, timeout:int=2) -> str:
 		"""
 			- Get the entry given the dataKey
 		"""
