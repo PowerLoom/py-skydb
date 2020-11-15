@@ -55,7 +55,12 @@ class RegistryEntry(object):
 			}
 
 		response = requests.post(self._endpoint_url, data=json.dumps(post_data))
-		print(response.status_code)
+		if response.status_code == 204:
+			print("Data Successfully stored in the Registry")
+		else:
+			raise Exception("The Registry Data was Invalid. Please do recheck that you are not using\
+					the same revision number to update the data. Also make sure that the keys used to\
+					sign the message come from the same seed value")
 
 
 	def get_entry(self, data_key:str) -> str:
@@ -68,6 +73,7 @@ class RegistryEntry(object):
 					'publickey': publickey,
 					'datakey': datakey,
 				}
-		print(json.dumps(querry))
-		response = requests.get(self._endpoint_url, params=querry)
+		# The below line will raise requests.exceptions.Timeout exception if it was unable to fetch the data 
+		# in two seconds.
+		response = requests.get(self._endpoint_url, params=querry, timeout=2)
 		return response.text
