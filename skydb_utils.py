@@ -13,11 +13,16 @@ class SkydbTable(object):
 	edit_rows, fetchone, fetchall
 	"""
 
-	def __init__(self, table_name:str, seed:str):
+	def __init__(self, table_name:str, columns:list, seed:str):
 		"""
 		Args:
 			table_name(str): This is the name of the table and will also act as key in the 
 			skydb registry.
+
+			columns(list): This parameter will name all the columns of the table. In general I 
+			plan of setting each of the row as multiple key -> value pairs with key being the
+			table_name:column_name:index and the value will be data stored at that (row i.e., index, column)
+			place.
 
 			seed(str): This is an important parameter. The seed will be used to generate the same
 			public and private key pairs. If the seed is lost then access to the data entrys in the 
@@ -30,7 +35,7 @@ class SkydbTable(object):
 		self.registry = RegistryEntry(self._pk, self._sk)
 		
 		# The index will be checked for and if there was no such table before then the index will be zero
-		self.index = self.get_index()
+		self.index, self._index_revision = self.get_index()
 	
 	def get_index(self) -> int:
 		"""
@@ -39,10 +44,17 @@ class SkydbTable(object):
 		the moment.
 		"""
 		try:
-			index = int(self.registry.get_entry(f"INDEX:{self.table_name}"))
-			return index
+			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}")
+			return int(index), revision
 		except Timeout as T:
-			return 0
+			self.registry.set_entry(data_key=f"INDEX:{self.table_name}", data=f"{0}", revision=1)
+			return (0,1)
+
+	def add_row(self):
+		"""
+
+		"""
+		pass
 
 class RegistryEntry(object):
 
@@ -122,6 +134,7 @@ class RegistryEntry(object):
 		# The below line will raise requests.exceptions.Timeout exception if it was unable to fetch the data 
 		# in two seconds.
 		response = requests.get(self._endpoint_url, params=querry, timeout=2)
-		response_data = json.loads(response.text)['data']
-		response_data = bytearray.fromhex(response_data).decode()
-		return response_data
+		response_data = json.loads(response.text)
+		revision = response_data['revision']
+		data = bytearray.fromhex(response_data['data']).decode()
+		return (data, revision)
