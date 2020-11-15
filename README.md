@@ -1,6 +1,6 @@
 # raghav-repo
-This is sample repo that will be used to store and retrieve data from the Registry
-Usage:
+### This is sample repo that will be used to store and retrieve data from the Registry
+### Usage:
 
 ```python
 from skydb_utils import RegistryEntry
