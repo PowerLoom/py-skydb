@@ -44,17 +44,17 @@ def hash_data_key(data_key:str) -> str:
 	"""
 	encoded_data_key = encode_string(data_key)
 	h = hashlib.blake2b(digest_size=32)
-	# import to convert the list of ints to bytes
+	# important to convert the list of ints to bytes
 	h.update(bytes(encoded_data_key))
 	return h.hexdigest()
 
-def hash_all(data:list):
+def hash_all(data:list) -> bytes:
 	"""
 		- Do a hash on all of the given data
 		Returns:
 			hash_data(bytes): Note that this function returns bytes and not a hex string
 	"""
-	h = hashlib.blake2b()
+	h = hashlib.blake2b(digest_size=32)
 	for d in data:
 		if isinstance(d, str):
 			h.update(d.encode())
@@ -63,7 +63,7 @@ def hash_all(data:list):
 			h.update(bytes(d))
 
 		else:
-			raise ValueError("An invalid type of data has been passed. This function only processed string and lists")
+			raise ValueError("An invalid type of data has been passed. This function only processese string and lists")
 	return h.digest()
 
 
