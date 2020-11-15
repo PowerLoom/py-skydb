@@ -21,7 +21,7 @@ class SkydbTable(object):
 
 			columns(list): This parameter will name all the columns of the table. In general I 
 			plan of setting each of the row as multiple key -> value pairs with key being the
-			table_name:column_name:index and the value will be data stored at that (row i.e., index, column)
+			table_name:column_name:row_index and the value will be data stored at that (row i.e. index, column)
 			place.
 
 			seed(str): This is an important parameter. The seed will be used to generate the same
@@ -30,8 +30,10 @@ class SkydbTable(object):
 		"""
 		self.table_name = table_name
 		self.seed = seed
-		self._pk, self._sk = genKeyPairFromSeed(self.seed)
+		self.columns = columns
 
+		# Initialize the Registry
+		self._pk, self._sk = genKeyPairFromSeed(self.seed)
 		self.registry = RegistryEntry(self._pk, self._sk)
 		
 		# The index will be checked for and if there was no such table before then the index will be zero
@@ -47,14 +49,61 @@ class SkydbTable(object):
 			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}")
 			return int(index), revision
 		except Timeout as T:
+			print("Initializing the index...")
 			self.registry.set_entry(data_key=f"INDEX:{self.table_name}", data=f"{0}", revision=1)
 			return (0,1)
 
-	def add_row(self):
+	def add_row(self, row:dict) -> int:
 		"""
+		Args:
+			row(dict): this dictionary must have all the keys that have been passed as columns 
+			while initializing this object.
+		Returns:
+			latest_index(int): This value represents the index of the added row
 
 		"""
-		pass
+		# Check for invalid column names
+		for k in row.keys():
+			if k not in self.columns:
+				raise ValueError("An invalid column has been passed.")
+
+		# Check if all the columns are filled or not
+		for k in self.columns:
+			if k not in list(row.keys()):
+				raise ValueError(f"Column {k} is empty")
+
+		
+		# Add data to the registry one by one
+		for key in row.keys():
+			print(f"Adding column {key}")
+			self.registry.set_entry(
+					data_key=f"{self.table_name}:{key}:{self.index}",
+					data=f"{row[key]}",
+					revision=1
+				)
+
+		self.index += 1
+		self.registry.set_entry(f"INDEX:{self.table_name}",f"{self.index}", self._index_revision+1)
+		self._index_revision += 1
+
+		return self.index - 1
+
+	def fetch_row(self, row_index:int) -> dict:
+		"""
+		Args:
+			row_index(int): The index of the row that you want to fetch
+		"""
+		if row_index >= self.index:
+			raise ValueError(f"Data does not exist at index {row_index}")
+
+		row = {}
+		for c in self.columns:
+			print(f"Fetching data for {c}")
+			data, revision = self.registry.get_entry(data_key=f"{self.table_name}:{c}:{row_index}")
+			row[c] = data
+
+		return row
+
 
 class RegistryEntry(object):
 
