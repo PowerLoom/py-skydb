@@ -9,13 +9,16 @@ _ = table.add_row({'c1':'Data 1', 'c2': 'HoHoHo'})
 _ = table.add_row({'c1':'Data 2', 'c2': 'HoHoHo'})
 _ = table.add_row({'c1':'Data 3', 'c2': 'HoHoHo'})
 _ = table.add_row({'c1':'Data 4', 'c2': 'HoHoHo'})
+_ = table.add_row({'c1':'Data 5', 'c2': 'HoHoHo'})
+_ = table.add_row({'c1':'Data 4', 'c2': 'NewData'})
 
 print(table.fetch_row(row_index=0))
 print(table.fetch_row(row_index=1))
 print(table.fetch_row(row_index=2))
 print(table.fetch_row(row_index=3))
 
-print(table.fetch_one(condition={'c1':'Data 4'}, num_workers=2))
+print(table.fetch(condition={'c1':'Data 4'}, mode=0, num_workers=2)) # fetch one row
+print(table.fetch(condition={'c1':'Data 4'}, mode=1, num_workers=2)) # fetch all rows
 ```
 
 ### Registry Entry Usage:
