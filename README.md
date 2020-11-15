@@ -1,8 +1,8 @@
 # raghav-repo
-
-```python
 This is sample repo that will be used to store and retrieve data from the Registry
 Usage:
+
+```python
 from skydb_utils import RegistryEntry
 from crypto import genKeyPairFromSeed
 import json
