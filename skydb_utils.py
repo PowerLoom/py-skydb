@@ -48,7 +48,7 @@ class SkydbTable(object):
 		the moment.
 		"""
 		try:
-			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}")
+			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}", timeout=5)
 			return int(index), revision
 		except Timeout as T:
 			print("Initializing the index...")
@@ -235,7 +235,7 @@ class RegistryEntry(object):
 			- make sure that the keys used to sign the message come from the same seed value.
 			""")
 
-	def get_entry(self, data_key:str) -> str:
+		def get_entry(self, data_key:str, timeout:int=2) -> str:
 		"""
 			- Get the entry given the dataKey
 		"""
@@ -247,7 +247,7 @@ class RegistryEntry(object):
 				}
 		# The below line will raise requests.exceptions.Timeout exception if it was unable to fetch the data 
 		# in two seconds.
-		response = requests.get(self._endpoint_url, params=querry, timeout=2)
+		response = requests.get(self._endpoint_url, params=querry, timeout=timeout)
 		response_data = json.loads(response.text)
 		revision = response_data['revision']
 		data = bytearray.fromhex(response_data['data']).decode()
