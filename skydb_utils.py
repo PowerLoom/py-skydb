@@ -1,9 +1,40 @@
 from crypto import hash_data_key, hash_all
 from crypto import encode_string,encode_num
+from crypto import genKeyPairFromSeed
 
 import requests
 import json
 import nacl.bindings
+
+class SkydbTable(object):
+	"""
+	- The main goals with this class will be to implement basic database functions such as add_rows,
+	edit_rows, fetchone, fetchall
+	"""
+
+	def __init__(self, table_name:str, seed:str):
+		"""
+		Args:
+			table_name(str): This is the name of the table and will also act as key in the 
+			skydb registry.
+
+			seed(str): This is an important parameter. The seed will be used to generate the same
+			public and private key pairs. If the seed is lost then access to the data entrys in the 
+			registry will also be lost.
+		"""
+		self.table_name = table_name
+		self.seed = seed
+		self._pk, self._sk = genKeyPairFromSeed(self.seed)
+		
+		# The index will be checked for and if there was no such table before then the index will be zero
+		self.index = self.get_index()
+	
+	def get_index(self) -> int:
+		"""
+		- Check if the table existed before, if so then retrieve its index and return it else
+		return 0
+		"""
+		pass
 
 class RegistryEntry(object):
 
@@ -64,7 +95,11 @@ class RegistryEntry(object):
 			print("Data Successfully stored in the Registry")
 		else:
 			print(response.text)
-			raise Exception("The Registry Data was Invalid. Please do recheck that you are not using the same revision number to update the data. Also make sure that the keys used to sign the message come from the same seed value. Also make sure that registry data is not too big")
+			raise Exception("""
+			The Registry Data was Invalid. Please do recheck that 
+			- you are not using the same revision number to update the data. 
+			- make sure that the keys used to sign the message come from the same seed value.
+			""")
 
 	def get_entry(self, data_key:str) -> str:
 		"""
