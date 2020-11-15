@@ -17,7 +17,8 @@ except Timeout as T:
 ```
 
 NOTE:
-
+	
+	- The max data size that you can put in the registry is 113 bytes or 113 characters.
 
 	- Using the same seed, do not try to set\_entry same the key:data pair with the same revision. Once the key:data pair is set in the database, you need to keep track of the revisions every time you want to edit that entry.
 

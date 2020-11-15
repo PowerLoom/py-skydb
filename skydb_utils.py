@@ -18,8 +18,10 @@ class RegistryEntry(object):
 		self._pk = public_key
 		self._sk = private_key
 		self._endpoint_url = endpoint_url
+
 		# This below variable refers to max size of the signed message
 		self._max_len = 64
+		self._max_data_size = 113
 
 
 
@@ -29,6 +31,9 @@ class RegistryEntry(object):
 			- Basically add an entry into the skynet with data_key as the key
 
 		"""
+		# Make sure that the data size does not exceed the max bytes
+		assert len(data) <= self._max_data_size, f"The data size({len(data)}) exceeded the limit of {self._max_data_size}."
+
 		# First sign the data
 		hash_entry = hash_all((
 				list(bytearray.fromhex(hash_data_key(data_key))),
