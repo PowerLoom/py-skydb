@@ -3,6 +3,7 @@ from crypto import encode_string,encode_num
 from crypto import genKeyPairFromSeed
 
 import requests
+from requests.exceptions import Timeout
 import json
 import nacl.bindings
 
@@ -25,6 +26,8 @@ class SkydbTable(object):
 		self.table_name = table_name
 		self.seed = seed
 		self._pk, self._sk = genKeyPairFromSeed(self.seed)
+
+		self.registry = RegistryEntry(self._pk, self._sk)
 		
 		# The index will be checked for and if there was no such table before then the index will be zero
 		self.index = self.get_index()
@@ -32,9 +35,14 @@ class SkydbTable(object):
 	def get_index(self) -> int:
 		"""
 		- Check if the table existed before, if so then retrieve its index and return it else
-		return 0
+		return 0. If a Timeout exception is raised then that means that the required data is not available at 
+		the moment.
 		"""
-		pass
+		try:
+			index = int(self.registry.get_entry(f"INDEX:{self.table_name}"))
+			return index
+		except Timeout as T:
+			return 0
 
 class RegistryEntry(object):
 
