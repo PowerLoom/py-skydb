@@ -3,4 +3,4 @@ from crypto import genKeyPairFromSeed
 
 pk, sk = genKeyPairFromSeed("My Seed")
 re = RegistryEntry(pk, sk)
-re.set_entry("KEY1", "My Data", 1)
+re.set_entry("KEY1", "My Data", 3)
