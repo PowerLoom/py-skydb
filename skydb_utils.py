@@ -7,6 +7,8 @@ from requests.exceptions import Timeout
 import json
 import nacl.bindings
 
+import threading
+
 class SkydbTable(object):
 	"""
 	- The main goals with this class will be to implement basic database functions such as add_rows,
@@ -75,7 +77,6 @@ class SkydbTable(object):
 		
 		# Add data to the registry one by one
 		for key in row.keys():
-			print(f"Adding column {key}")
 			self.registry.set_entry(
 					data_key=f"{self.table_name}:{key}:{self.index}",
 					data=f"{row[key]}",
@@ -93,16 +94,80 @@ class SkydbTable(object):
 		Args:
 			row_index(int): The index of the row that you want to fetch
 		"""
-		if row_index >= self.index:
-			raise ValueError(f"Data does not exist at index {row_index}")
+		if row_index >= self.index or row_index < 0:
+			raise ValueError(f"row_index={row_index} is invalid. It should in the range of 0-{self.index}")
 
 		row = {}
 		for c in self.columns:
-			print(f"Fetching data for {c}")
 			data, revision = self.registry.get_entry(data_key=f"{self.table_name}:{c}:{row_index}")
 			row[c] = data
 
 		return row
+
+	def _fetch(self, condition:dict, work_index:int, n_skip:int):
+		""" 
+		This function is meant to be run as a thread.
+		It will check for conditions an initiate flags once the row is found.
+		"""
+			
+		keys_satisfy = False
+		while not self.found:
+			if work_index >= self.index:
+				break
+
+			for k in condition.keys():
+				data, revision = self.registry.get_entry(
+								data_key=f"{self.table_name}:{k}:{work_index}"
+							)
+				if condition[k] != data:
+					keys_satisfy = False
+					break
+				else:
+					keys_satisfy = True
+
+			if not keys_satisfy:
+				work_index += n_skip
+			else:
+				self.fetch_lock.acquire()
+				if not self.found:
+					self.found = True
+					self.fetch_index = work_index
+				self.fetch_lock.release()	
+
+	def fetch_one(self, condition:dict, num_workers=2) -> dict:
+		"""
+		This function will fetch a row which satifies the condition. The condition can be something like
+		{'c1':'data 1', 'c2':'JeJa'}. The first row with those values will be returned
+
+		Args:
+			condition(dict): This variable is basically the values that will be in the row 
+			that you want to fetch
+		"""
+		# Make sure the condition is not empty
+		assert len(condition) > 0, "The condition should not be empty"
+
+		# Check if the keys are valid column names
+		for k in condition.keys():
+			assert k in self.columns, f"Invalid column name: {k}"
+
+	
+		self.found = False
+		self.fetch_index = -1
+		self.fetch_lock = threading.Lock()
+
+		threads = [threading.Thread(target=self._fetch, args=(condition,i,num_workers))\
+				for i in range(num_workers)]
+
+		for t in threads:
+			t.start()
+
+		for t in threads:
+			t.join()
+
+		if self.found == False:
+			return {}
+		else:
+			return self.fetch_row(row_index=self.fetch_index)
 
 
 class RegistryEntry(object):
