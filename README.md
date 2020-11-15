@@ -17,6 +17,8 @@ except Timeout as T:
 ```
 
 NOTE:
+
+
 	- Using the same seed, do not try to set\_entry same the key:data pair with the same revision. Once the key:data pair is set in the database, you need to keep track of the revisions every time you want to edit that entry.
 
 	- The same seed will always output same public, private key pairs.
