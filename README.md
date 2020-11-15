@@ -14,6 +14,8 @@ print(table.fetch_row(row_index=0))
 print(table.fetch_row(row_index=1))
 print(table.fetch_row(row_index=2))
 print(table.fetch_row(row_index=3))
+
+print(table.fetch_one(condition={'c1':'Data 4'}, num_workers=2))
 ```
 
 ### Registry Entry Usage:
