@@ -31,7 +31,7 @@ class RegistryEntry(object):
 		"""
 		# First sign the data
 		hash_entry = hash_all((
-				hash_data_key(data_key), 
+				list(bytearray.fromhex(hash_data_key(data_key))),
 				encode_string(data),
 				encode_num(revision),
 			))
@@ -48,15 +48,16 @@ class RegistryEntry(object):
 
 		post_data = {
 				'publickey': public_key,
-				'dataKey': _data_key,
+				'datakey': _data_key,
 				'revision': revision,
 				'data': _data,
 				'signature': _signature,
 			}
 		print(json.dumps(post_data))
 
-		req = requests.post(self._endpoint_url, data=json.dumps(post_data))
-		print(req.json())
+		response = requests.post(self._endpoint_url, data=json.dumps(post_data))
+		print(response.status_code)
+		print(response.text)
 
 
 	def get_entry(self, data_key:str) -> str:
