@@ -19,6 +19,9 @@ print(table.fetch_row(row_index=3))
 
 print(table.fetch(condition={'c1':'Data 4'}, mode=0, num_workers=2)) # fetch one row
 print(table.fetch(condition={'c1':'Data 4'}, mode=1, num_workers=2)) # fetch all rows
+
+table.update_row(row_index=5, data={'c1':'SomeNewUpdateData'})
+print(table.fetch_row(row_index=5))
 ```
 
 ### Registry Entry Usage:
