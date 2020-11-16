@@ -89,6 +89,32 @@ class SkydbTable(object):
 
 		return self.index - 1
 
+	def update_row(self, row_index:int, data:dict):
+		"""
+		Args:
+			row_index(int): The index of the row that you want to update.
+			data(dict): The data that you want to update with.
+		"""
+
+		if row_index >= self.index or row_index < 0:
+			raise ValueError(f"row_index={row_index} is invalid. It should in the range of 0-{self.index}")
+
+		# Check for invalid column names
+		for k in data.keys():
+			if k not in self.columns:
+				raise ValueError("An invalid column has been passed.")
+
+		for k in data.keys():
+			old_data, revision = self.registry.get_entry(
+					data_key=f"{self.table_name}:{k}:{row_index}",
+				)
+			self.registry.set_entry(
+					data_key=f"{self.table_name}:{k}:{row_index}",
+					data=f"{data[k]}",
+					revision=revision+1,
+				)
+
+
 	def fetch_row(self, row_index:int) -> dict:
 		"""
 		Args:
