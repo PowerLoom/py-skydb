@@ -1,7 +1,7 @@
 # raghav-repo
 ### SkydbTable Usage:
 ```python
-from skydb_utils import SkydbTable
+from skydb import SkydbTable
 
 table = SkydbTable(table_name="SomeRandomTableName", columns=['c1','c2'], seed="RANDOM SEED")
 
