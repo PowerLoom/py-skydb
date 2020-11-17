@@ -130,78 +130,93 @@ class SkydbTable(object):
 
 		return row
 
-	def _fetch(self, condition:dict, work_index:int, n_skip:int, mode:int):
+	def _fetch(self, condition:dict, n_rows:int, work_index:int, n_skip:int):
 		""" 
 		This function is meant to be run as a thread.
 		It will check for conditions an initiate flags once the row is found in case of fetch_one(mode=0)
 		or will update the fetched_data dictionary incase of fecth_all(mode=1)
+		Args:
+			condition(dict): The column values that we need to match
+			n_rows(int): The max rows that we need to fetch
+			work_index(int): The current working index of the thread
+			n_skip(int): The no.of rows to skip for the current thread to get its next work_index
 
 		"""
 			
 		keys_satisfy = False
-		while not self.found:
-			if work_index >= self.index:
+		while True:
+			if work_index < 0 or work_index >= self.index or len(self.fetched_rows) >= n_rows:
+				"""
+					- If the thread is on an index which is more that the no.of rows or an 
+					index which is less than zero.
+					- If we have reached the max no.of rows that we needed to fetch
+				"""
 				break
 
+			""" For each of the given condition, check if the row at work_index matches the condition """
 			for k in condition.keys():
 				data, revision = self.registry.get_entry(
 								data_key=f"{self.table_name}:{k}:{work_index}"
 							)
-				if condition[k] != data:
+				if condition[k] != data: # The value at the column matches the condition
 					keys_satisfy = False
 					break
 				else:
 					keys_satisfy = True
 
 			if not keys_satisfy:
+				""" The condition does not match """
 				work_index += n_skip
 			else:
-				if mode == 0:
-					self.fetch_lock.acquire()
-					if not self.found:
-						self.found = True
-						self.fetch_index = work_index
-					self.fetch_lock.release()	
-				elif mode == 1:
+				""" The condition match """
+				self.fetch_lock.acquire()
+				if len(self.fetched_rows) < n_rows:
 					self.fetched_rows[work_index] = self.fetch_row(row_index=work_index)
+				self.fetch_lock.release()	
 
 
-	def fetch(self, condition:dict, mode:int=0, num_workers:int=2) -> dict:
+	def fetch(self, condition:dict, start_index:int, n_rows:int=2, num_workers:int=2) -> dict:
 		"""
-		This function will fetch a row or bunch of rows, which satifies the condition. The condition can be something like
-		{'c1':'data 1', 'c2':'JeJa'}. The row(s) with those values will be returned
+		- This function will fetch a row or bunch of rows, which satifies the condition. The condition can be something like
+		{'c1':'data 1', 'c2':'JeJa'}. The rows with value 'data 1' at column c1 and value 'JeJa' at column c2
+		will be matched and returned.
+
+		- This function searches the rows in descending order, for example if the start_index=28, the function
+		will search for rows that match the condition from row 28 all the way to row 0, until the no.of rows 
+		matched are equal to n_rows.
 
 		Args:
+			Date: 18th Nov 2020
 			condition(dict): This variable is basically the values that will be in the row 
 			that you want to fetch
-			
-			mode(int): This value represents whether you want the first row which matches the conditions
-			or all rows the rows which match the condition. mode=0 for fetching a single row and mode=1 
-			for fetching 1 or more rows.
+
+			start_index(int): The index from where the searching should start.
+
+			n_rows(int): This variable specifies the no.of rows that I need to fetch at max in this fetch_operation.
+			At this moment, the skydb portal ratelimits and throttles connections, so I will 
+			not be able to continuosly send GET requests to their portal. 
 
 			num_workers(int): This value represents the number of threads that will be assigned to search 
 			for the rows
+
 		"""
 		# Make sure the condition is not empty
 		assert len(condition) > 0, "The condition should not be empty"
 
-		# Make sure the mode is valid
-		assert mode in range(0,2), "Invalid mode. It can be either 0(fetch_one) or 1(fetch_all)"
+		# Make sure that the start_index is not greater latest record and not less than zero
+		assert start_index in range(0, self.index),\
+						f"The start_index:{start_index} is invalid. It should in the range [0,{self.index})."
 
 		# Check if the keys are valid column names
 		for k in condition.keys():
 			assert k in self.columns, f"Invalid column name: {k}"
 
-	
-		self.found = False
-		if mode == 0:
-			self.fetch_index = -1
-			self.fetch_lock = threading.Lock()
-		elif mode == 1:
-			self.fetched_rows = {}
+		self.fetch_lock = threading.Lock()
+		self.fetched_rows = {}
 
-
-		threads = [threading.Thread(target=self._fetch, args=(condition, i, num_workers, mode))\
+		# We will be searching the registry from latest index to zero. That means searching will
+		# take place in descending order, thats why there is `start_index-i` below
+		threads = [threading.Thread(target=self._fetch, args=(condition, n_rows, start_index-i, -num_workers))\
 				for i in range(num_workers)]
 
 		for t in threads:
@@ -210,16 +225,7 @@ class SkydbTable(object):
 		for t in threads:
 			t.join()
 
-		if mode == 1:
-			return self.fetched_rows
-
-		if mode == 0 and self.found == False:
-			return {}
-		else:
-			return self.fetch_row(row_index=self.fetch_index)
-
-
-
+		return self.fetched_rows
 
 class RegistryEntry(object):
 
