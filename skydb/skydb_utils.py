@@ -1,6 +1,6 @@
-from crypto import hash_data_key, hash_all
-from crypto import encode_string,encode_num
-from crypto import genKeyPairFromSeed
+from .crypto import hash_data_key, hash_all
+from .crypto import encode_string,encode_num
+from .crypto import genKeyPairFromSeed
 
 import requests
 from requests.exceptions import Timeout
