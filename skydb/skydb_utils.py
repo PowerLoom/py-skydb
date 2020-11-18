@@ -9,13 +9,21 @@ import nacl.bindings
 
 import threading
 
+def _equal(condition:dict, key:str, value:str, column_split:list=None) -> bool:
+	return condition[key] == value
+
+def _value_in(condition:dict, key:str, value:str, column_split:list) -> bool:
+	idx = column_split.index(condition[key][0])
+	value_list = value.split(';')
+	return condition[key][1] == value_list[idx]
+
 class SkydbTable(object):
 	"""
 	- The main goals with this class will be to implement basic database functions such as add_rows,
 	edit_rows, fetchone, fetchall
 	"""
 
-	def __init__(self, table_name:str, columns:list, seed:str):
+	def __init__(self, table_name:str, columns:list, seed:str, column_split:list=[]):
 		"""
 		Args:
 			table_name(str): This is the name of the table and will also act as key in the 
@@ -29,10 +37,14 @@ class SkydbTable(object):
 			seed(str): This is an important parameter. The seed will be used to generate the same
 			public and private key pairs. If the seed is lost then access to the data entrys in the 
 			registry will also be lost.
+
+			column_split(list): If you are making a single column hold all the values in the row seperated by
+			';', column_split will hold the column names for each of the single values
 		"""
 		self.table_name = table_name
 		self.seed = seed
 		self.columns = columns
+		self.column_split = column_split
 
 		# Initialize the Registry
 		self._pk, self._sk = genKeyPairFromSeed(self.seed)
@@ -130,7 +142,7 @@ class SkydbTable(object):
 
 		return row
 
-	def _fetch(self, condition:dict, n_rows:int, work_index:int, n_skip:int):
+	def _fetch(self, condition:dict, n_rows:int, work_index:int, n_skip:int, condition_func):
 		""" 
 		This function is meant to be run as a thread.
 		It will check for conditions an initiate flags once the row is found in case of fetch_one(mode=0)
@@ -158,24 +170,23 @@ class SkydbTable(object):
 				data, revision = self.registry.get_entry(
 								data_key=f"{self.table_name}:{k}:{work_index}"
 							)
-				if condition[k] != data: # The value at the column matches the condition
-					keys_satisfy = False
+				if condition_func(condition, k, data, self.column_split): # The value at the column matches the condition
+					keys_satisfy = True
 					break
 				else:
-					keys_satisfy = True
+					keys_satisfy = False
 
-			if not keys_satisfy:
-				""" The condition does not match """
-				work_index += n_skip
-			else:
+
+			if keys_satisfy:
 				""" The condition match """
 				self.fetch_lock.acquire()
 				if len(self.fetched_rows) < n_rows:
 					self.fetched_rows[work_index] = self.fetch_row(row_index=work_index)
 				self.fetch_lock.release()	
+			work_index += n_skip
 
 
-	def fetch(self, condition:dict, start_index:int, n_rows:int=2, num_workers:int=2) -> dict:
+	def fetch(self, condition:dict, start_index:int, n_rows:int=2, num_workers:int=2, condition_func=None) -> dict:
 		"""
 		- This function will fetch a row or bunch of rows, which satifies the condition. The condition can be something like
 		{'c1':'data 1', 'c2':'JeJa'}. The rows with value 'data 1' at column c1 and value 'JeJa' at column c2
@@ -199,6 +210,9 @@ class SkydbTable(object):
 			num_workers(int): This value represents the number of threads that will be assigned to search 
 			for the rows
 
+			condition_func: A function which takes condition, k, target_value and columns as arguments. You can use this 
+			function along with the conditions so that a row matches that condition.
+
 		"""
 		# Make sure the condition is not empty
 		assert len(condition) > 0, "The condition should not be empty"
@@ -209,14 +223,16 @@ class SkydbTable(object):
 
 		# Check if the keys are valid column names
 		for k in condition.keys():
-			assert k in self.columns, f"Invalid column name: {k}"
+			assert (k in self.columns or k in self.column_split), f"Invalid column name: {k}"
 
 		self.fetch_lock = threading.Lock()
 		self.fetched_rows = {}
 
+		if condition_func == None:
+			condition_func = _equal
 		# We will be searching the registry from latest index to zero. That means searching will
 		# take place in descending order, thats why there is `start_index-i` below
-		threads = [threading.Thread(target=self._fetch, args=(condition, n_rows, start_index-i, -num_workers))\
+		threads = [threading.Thread(target=self._fetch, args=(condition, n_rows, start_index-i, -num_workers, condition_func))\
 				for i in range(num_workers)]
 
 		for t in threads:
@@ -244,7 +260,6 @@ class RegistryEntry(object):
 		# This below variable refers to max size of the signed message
 		self._max_len = 64
 		self._max_data_size = 113
-
 
 
 	def set_entry(self, data_key:str, data:str, revision:int) -> bool:
