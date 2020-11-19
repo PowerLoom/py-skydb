@@ -17,8 +17,8 @@ print(table.fetch_row(row_index=1))
 print(table.fetch_row(row_index=2))
 print(table.fetch_row(row_index=3))
 
-print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=2, num_workers=2)) # fetch one row
-print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=2, num_workers=2)) # fetch all rows
+print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=1, num_workers=2)) # fetch one row
+print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=3, num_workers=2)) # fetch three rows
 
 table.update_row(row_index=5, data={'c1':'SomeNewUpdateData'})
 print(table.fetch_row(row_index=5))
