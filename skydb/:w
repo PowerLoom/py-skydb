@@ -110,6 +110,7 @@ class SkydbTable(object):
 
 		return self.index - 1
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def update_row(self, row_index:int, data:dict):
 		"""
 		Args:
@@ -137,6 +138,7 @@ class SkydbTable(object):
 				)
 
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def fetch_row(self, row_index:int) -> dict:
 		"""
 		Args:
@@ -197,6 +199,7 @@ class SkydbTable(object):
 			work_index += n_skip
 
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def fetch(self, condition:dict, start_index:int, n_rows:int=2, num_workers:int=1, condition_func=None) -> dict:
 		"""
 		- This function will fetch a row or bunch of rows, which satifies the condition. The condition can be something like
@@ -275,6 +278,7 @@ class RegistryEntry(object):
 		self._max_data_size = 113
 
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def set_entry(self, data_key:str, data:str, revision:int) -> bool:
 		"""
 			- This function is based on the setEntry function of registry.ts.
