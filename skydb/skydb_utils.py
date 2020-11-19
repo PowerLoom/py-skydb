@@ -7,6 +7,7 @@ from requests.exceptions import Timeout
 import json
 import nacl.bindings
 
+import os
 import threading
 from tenacity import retry, wait_fixed, retry_if_exception_type
 from requests.exceptions import ReadTimeout as ReadTimeoutError
@@ -261,7 +262,7 @@ class SkydbTable(object):
 
 class RegistryEntry(object):
 
-	def __init__(self, public_key:bytes, private_key:bytes, endpoint_url:str="https://siasky.net/skynet/registry"):
+	def __init__(self, public_key:bytes, private_key:bytes, endpoint_url:str=os.getenv('REGISTRY_URL', "https://siasky.net/skynet/registry")):
 		"""
 		Args:
 			private_key(bytes), public_key(bytes): These two keys are responsible to sign and verify the 
