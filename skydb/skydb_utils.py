@@ -137,6 +137,7 @@ class SkydbTable(object):
 				)
 
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def fetch_row(self, row_index:int) -> dict:
 		"""
 		Args:
@@ -153,6 +154,7 @@ class SkydbTable(object):
 
 		return row
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def _fetch(self, condition:dict, n_rows:int, work_index:int, n_skip:int, condition_func):
 		""" 
 		This function is meant to be run as a thread.
@@ -197,6 +199,7 @@ class SkydbTable(object):
 			work_index += n_skip
 
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def fetch(self, condition:dict, start_index:int, n_rows:int=2, num_workers:int=1, condition_func=None) -> dict:
 		"""
 		- This function will fetch a row or bunch of rows, which satifies the condition. The condition can be something like
