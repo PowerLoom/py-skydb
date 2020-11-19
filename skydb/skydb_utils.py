@@ -8,6 +8,8 @@ import json
 import nacl.bindings
 
 import threading
+from tenacity import retry, wait_fixed, retry_if_exception_type
+from requests.exceptions import ReadTimeout as ReadTimeoutError
 
 def _equal(condition:dict, key:str, value:str, column_split:list=None) -> bool:
 	return condition[key] == value
@@ -52,6 +54,11 @@ class SkydbTable(object):
 		
 		# The index will be checked for and if there was no such table before then the index will be zero
 		self.index, self._index_revision = self.get_index()
+
+	def calibrate_index(self):
+			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}", timeout=5)
+			self._index_revision = revision
+			self.index = int(index)
 	
 	def get_index(self) -> int:
 		"""
@@ -76,6 +83,7 @@ class SkydbTable(object):
 			latest_index(int): This value represents the index of the added row
 
 		"""
+		self.calibrate_index()
 		# Check for invalid column names
 		for k in row.keys():
 			if k not in self.columns:
@@ -108,6 +116,7 @@ class SkydbTable(object):
 			data(dict): The data that you want to update with.
 		"""
 
+		self.calibrate_index()
 		if row_index >= self.index or row_index < 0:
 			raise ValueError(f"row_index={row_index} is invalid. It should in the range of 0-{self.index}")
 
@@ -132,6 +141,7 @@ class SkydbTable(object):
 		Args:
 			row_index(int): The index of the row that you want to fetch
 		"""
+		self.calibrate_index()
 		if row_index >= self.index or row_index < 0:
 			raise ValueError(f"row_index={row_index} is invalid. It should in the range of 0-{self.index}")
 
@@ -186,7 +196,7 @@ class SkydbTable(object):
 			work_index += n_skip
 
 
-	def fetch(self, condition:dict, start_index:int, n_rows:int=2, num_workers:int=2, condition_func=None) -> dict:
+	def fetch(self, condition:dict, start_index:int, n_rows:int=2, num_workers:int=1, condition_func=None) -> dict:
 		"""
 		- This function will fetch a row or bunch of rows, which satifies the condition. The condition can be something like
 		{'c1':'data 1', 'c2':'JeJa'}. The rows with value 'data 1' at column c1 and value 'JeJa' at column c2
@@ -214,6 +224,7 @@ class SkydbTable(object):
 			function along with the conditions so that a row matches that condition.
 
 		"""
+		self.calibrate_index()
 		# Make sure the condition is not empty
 		assert len(condition) > 0, "The condition should not be empty"
 
@@ -224,6 +235,7 @@ class SkydbTable(object):
 		# Check if the keys are valid column names
 		for k in condition.keys():
 			assert (k in self.columns or k in self.column_split), f"Invalid column name: {k}"
+
 
 		self.fetch_lock = threading.Lock()
 		self.fetched_rows = {}
@@ -262,6 +274,7 @@ class RegistryEntry(object):
 		self._max_data_size = 113
 
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def set_entry(self, data_key:str, data:str, revision:int) -> bool:
 		"""
 			- This function is based on the setEntry function of registry.ts.
@@ -307,10 +320,12 @@ class RegistryEntry(object):
 			- make sure that the keys used to sign the message come from the same seed value.
 			""")
 
-	def get_entry(self, data_key:str, timeout:int=2) -> str:
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
+	def get_entry(self, data_key:str, timeout:int=30) -> str:
 		"""
 			- Get the entry given the dataKey
 		"""
+		print(f"Accessing key:{data_key}")
 		publickey = f"ed25519:{self._pk.hex()}"
 		datakey = hash_data_key(data_key)
 		querry = {
