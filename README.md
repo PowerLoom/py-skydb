@@ -1,16 +1,20 @@
-# raghav-repo
+# py-skydb
+
+A Simple Python Wrapper that you can use to interact with SkyDB portals. You can use the SkydbTable to sotre rows into Skydb
+or you can directly use the RegistryEntry class to store key:value pairs.
+
 ### SkydbTable Usage:
 ```python
 from skydb import SkydbTable
 
 table = SkydbTable(table_name="SomeRandomTableName", columns=['c1','c2'], seed="RANDOM SEED")
 
-_ = table.add_row({'c1':'Data 1', 'c2': 'HoHoHo'})
-_ = table.add_row({'c1':'Data 2', 'c2': 'HoHoHo'})
-_ = table.add_row({'c1':'Data 3', 'c2': 'HoHoHo'})
-_ = table.add_row({'c1':'Data 4', 'c2': 'HoHoHo'})
-_ = table.add_row({'c1':'Data 5', 'c2': 'HoHoHo'})
-_ = table.add_row({'c1':'Data 4', 'c2': 'NewData'})
+index_ = table.add_row({'c1':'Data 1', 'c2': 'HoHoHo'})
+index_ = table.add_row({'c1':'Data 2', 'c2': 'HoHoHo'})
+index_ = table.add_row({'c1':'Data 3', 'c2': 'HoHoHo'})
+index_ = table.add_row({'c1':'Data 4', 'c2': 'HoHoHo'})
+index_ = table.add_row({'c1':'Data 5', 'c2': 'HoHoHo'})
+index_ = table.add_row({'c1':'Data 4', 'c2': 'NewData'})
 
 print(table.fetch_row(row_index=0))
 print(table.fetch_row(row_index=1))
@@ -19,7 +23,9 @@ print(table.fetch_row(row_index=3))
 
 print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=1, num_workers=2)) # fetch one row
 print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=3, num_workers=2)) # fetch three rows
+print(table.fetch(condition={'c1':'Data 4','c2':'NewData'}, start_index=table.index-1, n_rows=3, num_workers=2)) 
 
+# Update the row with new data
 table.update_row(row_index=5, data={'c1':'SomeNewUpdateData'})
 print(table.fetch_row(row_index=5))
 
@@ -56,4 +62,4 @@ NOTE:
 
 	- The same seed will always output same public, private key pairs.
 
-	- The get_entry  will throw a Timeout Exceptio if it was not able to find the data for that key. I am not handling that exception in the get_entry function. You will have to explicitly try to catch that one.
+	- The get_entry  will throw a Timeout Exception if it was not able to find the data for that key. I am not handling that exception in the get_entry function. You will have to explicitly try to catch that one.
