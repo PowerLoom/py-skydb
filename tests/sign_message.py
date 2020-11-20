@@ -1,4 +1,4 @@
-from crypto import genKeyPairFromSeed
+from skydb.crypto import genKeyPairFromSeed
 import nacl.bindings
 
 pk, sk = genKeyPairFromSeed("My Seed")

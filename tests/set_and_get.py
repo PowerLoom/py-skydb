@@ -1,5 +1,5 @@
-from skydb_utils import RegistryEntry
-from crypto import genKeyPairFromSeed
+from skydb import RegistryEntry
+from skydb.crypto import genKeyPairFromSeed
 import json
 import string
 import random

@@ -11,6 +11,8 @@ import os
 import threading
 from tenacity import retry, wait_fixed, retry_if_exception_type
 from requests.exceptions import ReadTimeout as ReadTimeoutError
+import logging
+import sys
 
 def _equal(condition:dict, key:str, value:str, column_split:list=None) -> bool:
 	return condition[key] == value
@@ -26,7 +28,7 @@ class SkydbTable(object):
 	edit_rows, fetchone, fetchall
 	"""
 
-	def __init__(self, table_name:str, columns:list, seed:str, column_split:list=[]):
+	def __init__(self, table_name:str, columns:list, seed:str, column_split:list=[], verbose=0):
 		"""
 		Args:
 			table_name(str): This is the name of the table and will also act as key in the 
@@ -49,10 +51,19 @@ class SkydbTable(object):
 		self.columns = columns
 		self.column_split = column_split
 
+		self.logger = logging.getLogger(table_name)
+		#self.logger.addHandler(logging.NullHandler())
+		self.logger.setLevel(logging.DEBUG)
+
+		if verbose:
+			ch = logging.StreamHandler(sys.stdout)
+			self.logger.addHandler(ch)
+
 		# Initialize the Registry
 		self._pk, self._sk = genKeyPairFromSeed(self.seed)
 		self.registry = RegistryEntry(self._pk, self._sk)
-		
+		self.logger.debug("Initialized Table")
+
 		# The index will be checked for and if there was no such table before then the index will be zero
 		self.index, self._index_revision = self.get_index()
 
@@ -71,9 +82,11 @@ class SkydbTable(object):
 
 
 	def calibrate_index(self):
-			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}", timeout=5)
-			self._index_revision = revision
-			self.index = int(index)
+		self.logger.debug("Inside calibrate_index function")
+		index, revision = self.registry.get_entry(f"INDEX:{self.table_name}", timeout=5)
+		self._index_revision = revision
+		self.index = int(index)
+		self.logger.debug("Calibrated Index to: "+str(index))
 	
 	
 	def get_index(self) -> int:
@@ -82,14 +95,16 @@ class SkydbTable(object):
 		return 0. If a Timeout exception is raised then that means that the required data is not available at 
 		the moment.
 		"""
+		self.logger.debug("Inside get index function")
 		try:
 			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}", timeout=5)
 			return int(index), revision
 		except Timeout as T:
-			print("Initializing the index...")
+			self.logger.debug("Initializing the index...")
 			self.registry.set_entry(data_key=f"INDEX:{self.table_name}", data=f"{0}", revision=1)
 			return (0,1)
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def add_row(self, row:dict) -> int:
 		"""
 		Args:
@@ -99,7 +114,6 @@ class SkydbTable(object):
 			latest_index(int): This value represents the index of the added row
 
 		"""
-		self.calibrate_index()
 		# Check for invalid column names
 		for k in row.keys():
 			if k not in self.columns:
@@ -111,6 +125,8 @@ class SkydbTable(object):
 				raise ValueError(f"Column {k} is empty")
 
 		
+		self.logger.debug("Adding row: ")
+		self.logger.debug(row)
 		# Add data to the registry one by one
 		for key in row.keys():
 			self.registry.set_entry(
@@ -125,6 +141,7 @@ class SkydbTable(object):
 
 		return self.index - 1
 
+	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def update_row(self, row_index:int, data:dict):
 		"""
 		Args:
@@ -141,6 +158,8 @@ class SkydbTable(object):
 			if k not in self.columns:
 				raise ValueError("An invalid column has been passed.")
 
+		self.logger.debug("Updating row at index: "+str(row_index))
+		self.logger.debug(data)
 		for k in data.keys():
 			old_data, revision = self.registry.get_entry(
 					data_key=f"{self.table_name}:{k}:{row_index}",
@@ -162,6 +181,7 @@ class SkydbTable(object):
 		if row_index >= self.index or row_index < 0:
 			raise ValueError(f"row_index={row_index} is invalid. It should in the range of 0-{self.index}")
 
+		self.logger.debug("Fetching row at index: "+str(row_index))
 		row = {}
 		for c in self.columns:
 			data, revision = self.registry.get_entry(data_key=f"{self.table_name}:{c}:{row_index}")
@@ -172,9 +192,8 @@ class SkydbTable(object):
 	@retry(wait=wait_fixed(3), retry=retry_if_exception_type(ReadTimeoutError))
 	def _fetch(self, condition:dict, n_rows:int, work_index:int, n_skip:int, condition_func):
 		""" 
-		This function is meant to be run as a thread.
-		It will check for conditions an initiate flags once the row is found in case of fetch_one(mode=0)
-		or will update the fetched_data dictionary incase of fecth_all(mode=1)
+		This function is meant to be run as a thread. Will check through each column of the row and see if it 
+		matches the condition
 		Args:
 			condition(dict): The column values that we need to match
 			n_rows(int): The max rows that we need to fetch
@@ -187,7 +206,7 @@ class SkydbTable(object):
 		while True:
 			if work_index < 0 or work_index >= self.index or len(self.fetched_rows) >= n_rows:
 				"""
-					- If the thread is on an index which is more that the no.of rows or an 
+					- If the thread is on an index which is more that the no.of rows in the table or an 
 					index which is less than zero.
 					- If we have reached the max no.of rows that we needed to fetch
 				"""
@@ -233,8 +252,6 @@ class SkydbTable(object):
 			start_index(int): The index from where the searching should start.
 
 			n_rows(int): This variable specifies the no.of rows that I need to fetch at max in this fetch_operation.
-			At this moment, the skydb portal ratelimits and throttles connections, so I will 
-			not be able to continuosly send GET requests to their portal. 
 
 			num_workers(int): This value represents the number of threads that will be assigned to search 
 			for the rows
@@ -258,7 +275,9 @@ class SkydbTable(object):
 
 		self.fetch_lock = threading.Lock()
 		self.fetched_rows = {}
-
+		self.logger.debug("In function fetch. Recieved arguments: ")
+		self.logger.debug(condition)
+		self.logger.debug("Start Index: "+str(start_index)+" n_rows: "+str(n_rows)+" num_workers: "+str(num_workers))
 		if condition_func == None:
 			condition_func = _equal
 		# We will be searching the registry from latest index to zero. That means searching will
@@ -276,11 +295,14 @@ class SkydbTable(object):
 
 class RegistryEntry(object):
 
-	def __init__(self, public_key:bytes, private_key:bytes, endpoint_url:str=os.getenv('REGISTRY_URL', "https://siasky.net/skynet/registry")):
+	def __init__(self, public_key:bytes, private_key:bytes, 
+			endpoint_url:str=os.getenv('REGISTRY_URL', "https://siasky.net/skynet/registry"),
+			verbose=0,
+			):
 		"""
 		Args:
 			private_key(bytes), public_key(bytes): These two keys are responsible to sign and verify the 
-			messages that will sent and retreived from the skynet
+			messages that will be sent and retreived from the skynet
 
 		"""
 		
@@ -292,6 +314,14 @@ class RegistryEntry(object):
 		self._max_len = 64
 		self._max_data_size = 113
 
+		# Logger
+		self.logger = logging.getLogger("REGISTRY")
+		self.logger.setLevel(logging.DEBUG)
+
+		if verbose:
+			ch = logging.StreamHandler(sys.stdout)
+			self.logger.addHandler(ch)
+
 
 	def set_entry(self, data_key:str, data:str, revision:int) -> bool:
 		"""
@@ -301,6 +331,8 @@ class RegistryEntry(object):
 		"""
 		# Make sure that the data size does not exceed the max bytes
 		assert len(data) <= self._max_data_size, f"The data size({len(data)}) exceeded the limit of {self._max_data_size}."
+
+		self.logger.debug("Inside set Entry function")
 
 		# First sign the data
 		hash_entry = hash_all((
@@ -329,9 +361,9 @@ class RegistryEntry(object):
 
 		response = requests.post(self._endpoint_url, data=json.dumps(post_data))
 		if response.status_code == 204:
-			print("Data Successfully stored in the Registry")
+			self.logger.debug("Data Successfully stored in the Registry")
 		else:
-			print(response.text)
+			self.logger.debug(response.text)
 			raise Exception("""
 			The Registry Data was Invalid. Please do recheck that 
 			- you are not using the same revision number to update the data. 
@@ -342,7 +374,7 @@ class RegistryEntry(object):
 		"""
 			- Get the entry given the dataKey
 		"""
-		print(f"Accessing key:{data_key}")
+		self.logger.debug("Inside get Entry function")
 		publickey = f"ed25519:{self._pk.hex()}"
 		datakey = hash_data_key(data_key)
 		querry = {

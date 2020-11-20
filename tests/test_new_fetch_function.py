@@ -13,7 +13,8 @@ from string import ascii_letters
 table_name = ''.join([choice(ascii_letters) for i in range(20)]) # Generate a random table name
 seed = "SEED"
 
-table = SkydbTable(table_name, columns=['col1'], column_split=['c1','c2','c3'], seed=seed)
+table = SkydbTable(table_name, columns=['col1'], column_split=['c1','c2','c3'], seed=seed, verbose=1)
+print("Got the table")
 
 row_index = table.add_row({'col1':'Data-1;Data-2;Data-3'}) 
 row_index = table.add_row({'col1':'Data-5;Data-6;Data-7'})
