@@ -55,6 +55,20 @@ class SkydbTable(object):
 		# The index will be checked for and if there was no such table before then the index will be zero
 		self.index, self._index_revision = self.get_index()
 
+	@staticmethod
+	def check_table(table_name:str, seed:str):
+		"""
+			Given a table_name and seed, check if that table already exists in the Skydb.
+		"""
+		pk, sk = genKeyPairFromSeed(seed)
+		registry = RegistryEntry(pk, sk)
+		try:	
+			index, revision = registry.get_entry(f"INDEX:{table_name}", timeout=5)
+			return int(index), revision
+		except Timeout as T:
+			return None
+
+
 	def calibrate_index(self):
 			index, revision = self.registry.get_entry(f"INDEX:{self.table_name}", timeout=5)
 			self._index_revision = revision
