@@ -1,6 +1,6 @@
 # py-skydb
 
-A Simple Python Wrapper that you can use to interact with SkyDB portals. You can use the SkydbTable to sotre rows into Skydb
+A Simple Python Wrapper that you can use to interact with SkyDB portals. You can use the SkydbTable to store rows into Skydb
 or you can directly use the RegistryEntry class to store key:value pairs.
 
 ### SkydbTable Usage:
