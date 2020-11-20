@@ -2,17 +2,17 @@ import setuptools
 from setuptools import setup
 
 install_requires = [
-		backports.pbkdf2==0.1,
-		certifi==2020.11.8,
-		cffi==1.14.3,
-		chardet==3.0.4,
-		idna==2.10,
-		pycparser==2.20,
-		PyNaCl==1.4.0,
-		requests==2.25.0,
-		six==1.15.0,
-		urllib3==1.26.2,
-		tenacity,
+		"backports.pbkdf2==0.1",
+		"certifi==2020.11.8",
+		"cffi==1.14.3",
+		"chardet==3.0.4",
+		"idna==2.10",
+		"pycparser==2.20",
+		"PyNaCl==1.4.0",
+		"requests==2.25.0",
+		"six==1.15.0",
+		"urllib3==1.26.2",
+		"tenacity",
 	]
 
 classifiers = [
