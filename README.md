@@ -27,7 +27,7 @@ print(table.fetch_row(row_index=5))
 """ Check if a table exists """
 out = SkydbTable.check_table(table_name="table_name", seed="xyz")
 if out is None:
-	print("The table does not exist"
+	print("The table does not exist")
 else:
 	print(f"The table exists at index {out[0]}, with revision {out[1]}")
 ```
