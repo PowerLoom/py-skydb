@@ -22,6 +22,14 @@ print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=3
 
 table.update_row(row_index=5, data={'c1':'SomeNewUpdateData'})
 print(table.fetch_row(row_index=5))
+
+
+""" Check if a table exists """
+out = SkydbTable.check_table(table_name="table_name", seed="xyz")
+if out is None:
+	print("The table does not exist"
+else:
+	print(f"The table exists at index {out[0]}, with revision {out[1]}")
 ```
 
 ### Registry Entry Usage:
