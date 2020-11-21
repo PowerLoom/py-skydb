@@ -311,7 +311,10 @@ class RegistryEntry(object):
 		
 		self._pk = public_key
 		self._sk = private_key
-		self._endpoint_url = urljoin(prefix_endpoint_url,"skynet/registry")
+		if prefix_endpoint_url != "":
+			self._endpoint_url = urljoin(prefix_endpoint_url,"skynet/registry")
+		else:
+			self._endpoint_url = urljoin("http://siasky.net/","skynet/registry")
 
 		# This below variable refers to max size of the signed message
 		self._max_len = 64
