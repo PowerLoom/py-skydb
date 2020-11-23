@@ -321,7 +321,8 @@ class RegistryEntry(object):
 		self._max_data_size = 113
 
 		# Logger
-		self.logger = logging.getLogger("REGISTRY")
+		self.logger = logging.getLogger(__name__)
+		self.logger.addHandler(logging.NullHandler())
 		self.logger.setLevel(logging.DEBUG)
 
 		if verbose:
