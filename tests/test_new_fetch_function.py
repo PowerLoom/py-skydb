@@ -64,6 +64,3 @@ def test_fetch_0_rows():
 	print("-"*40)
 	print(rows)
 
-test_fetch_2_rows()
-test_fetch_1_rows()
-test_fetch_0_rows()

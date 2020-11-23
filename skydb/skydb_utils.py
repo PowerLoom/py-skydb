@@ -11,6 +11,7 @@ import os
 import threading
 from tenacity import retry, wait_fixed, retry_if_exception_type
 from requests.exceptions import ReadTimeout as ReadTimeoutError
+from urllib.parse import urljoin
 import logging
 import sys
 
@@ -51,17 +52,19 @@ class SkydbTable(object):
 		self.columns = columns
 		self.column_split = column_split
 
-		self.logger = logging.getLogger(table_name)
-		#self.logger.addHandler(logging.NullHandler())
+		self.logger = logging.getLogger(__name__)
+		self.logger.addHandler(logging.NullHandler())
 		self.logger.setLevel(logging.DEBUG)
 
 		if verbose:
+			formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 			ch = logging.StreamHandler(sys.stdout)
+			ch.setFormatter(formatter)
 			self.logger.addHandler(ch)
 
 		# Initialize the Registry
 		self._pk, self._sk = genKeyPairFromSeed(self.seed)
-		self.registry = RegistryEntry(self._pk, self._sk)
+		self.registry = RegistryEntry(self._pk, self._sk, verbose=verbose)
 		self.logger.debug("Initialized Table")
 
 		# The index will be checked for and if there was no such table before then the index will be zero
@@ -296,7 +299,7 @@ class SkydbTable(object):
 class RegistryEntry(object):
 
 	def __init__(self, public_key:bytes, private_key:bytes, 
-			endpoint_url:str=os.getenv('REGISTRY_URL', "https://siasky.net/skynet/registry"),
+			prefix_endpoint_url:str=os.getenv('REGISTRY_URL', "https://siasky.net/"),
 			verbose=0,
 			):
 		"""
@@ -308,19 +311,26 @@ class RegistryEntry(object):
 		
 		self._pk = public_key
 		self._sk = private_key
-		self._endpoint_url = endpoint_url
+		if prefix_endpoint_url != "":
+			self._endpoint_url = urljoin(prefix_endpoint_url,"skynet/registry")
+		else:
+			self._endpoint_url = urljoin("http://siasky.net/","skynet/registry")
 
 		# This below variable refers to max size of the signed message
 		self._max_len = 64
 		self._max_data_size = 113
 
 		# Logger
-		self.logger = logging.getLogger("REGISTRY")
+		self.logger = logging.getLogger(__name__)
+		self.logger.addHandler(logging.NullHandler())
 		self.logger.setLevel(logging.DEBUG)
 
 		if verbose:
+			formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 			ch = logging.StreamHandler(sys.stdout)
+			ch.setFormatter(formatter)
 			self.logger.addHandler(ch)
+		self.logger.debug("Using endpoint url: "+self._endpoint_url)
 
 
 	def set_entry(self, data_key:str, data:str, revision:int) -> bool:

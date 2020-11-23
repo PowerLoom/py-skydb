@@ -13,6 +13,7 @@ install_requires = [
 		"six==1.15.0",
 		"urllib3==1.26.2",
 		"tenacity",
+		"pytest"
 	]
 
 classifiers = [
@@ -20,6 +21,7 @@ classifiers = [
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3 :: Only',
     'Operating System :: POSIX',
     'Environment :: Web Environment',
