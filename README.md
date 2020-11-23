@@ -57,7 +57,7 @@ def check_start_D(condition, key, value, column_split) -> bool:
 	column_split(list): If by any chance  you want to combine all the columns in to single column, you can mention the column_split while initializing 
 	the table. It defaults to None.	
     '''
-    if (value[0] == 'D') and (value[-1] == '4'):
+    if (key=='c1') and (value[0] == 'D') and (value[-1] == '4'):
         return True
     else:
         return False
