@@ -21,8 +21,11 @@ print(table.fetch_row(row_index=1))
 print(table.fetch_row(row_index=2))
 print(table.fetch_row(row_index=3))
 
+# The start_index refers to the index from where you want to start fetching rows. The function will fetch rows which match the condition from start_index to 0 
 print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=1, num_workers=2)) # fetch one row
+
 print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=3, num_workers=2)) # fetch three rows
+
 print(table.fetch(condition={'c1':'Data 4','c2':'NewData'}, start_index=table.index-1, n_rows=3, num_workers=2)) 
 
 # Update the row with new data
@@ -36,6 +39,36 @@ if out is None:
 	print("The table does not exist")
 else:
 	print(f"The table exists at index {out[0]}, with revision {out[1]}")
+	
+	
+""" Using a condition function """
+"""
+If there is a certain condition that you want to match against a certain row for example, if you want to match rows that have 
+first letter as D and last letter 4 in their column c1, you can specificially write a seperate function to do that and then pass 
+that function as an argument to the table.fetch function
+"""
+
+def check_start_D(condition, key, value, column_split) -> bool:
+    '''
+    args:
+    	condition(dict): This is the condition variable that you passed.
+	key(str): The column that is being processed right now
+	value(str): The value for the column(key) in the Skydb
+	column_split(list): If by any chance  you want to combine all the columns in to single column, you can mention the column_split while initializing 
+	the table. It defaults to None.	
+    '''
+    if (value[0] == 'D') and (value[-1] == '4'):
+        return True
+    else:
+        return False
+	
+row = table.fetch(
+	    condtion={'c1':''}, # Leave it empty if you dont want to match any kind of text
+	    start_index=table.index-1, # The table.index-1 gives you the index of the last added row
+	    n_rows=2,
+	    condition_func=check_start_D # Your condition function
+	)
+    
 ```
 
 ### Registry Entry Usage:
