@@ -52,8 +52,8 @@ class SkydbTable(object):
 		self.columns = columns
 		self.column_split = column_split
 
-		self.logger = logging.getLogger(table_name)
-		#self.logger.addHandler(logging.NullHandler())
+		self.logger = logging.getLogger(__name__)
+		self.logger.addHandler(logging.NullHandler())
 		self.logger.setLevel(logging.DEBUG)
 
 		if verbose:
