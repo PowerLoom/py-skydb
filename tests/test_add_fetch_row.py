@@ -1,9 +1,10 @@
 from skydb import SkydbTable
 from random import choice
 from string import ascii_letters
-table_name = ''.join([choice(ascii_letters) for i in range(20)])
+table_name = ''.join([choice(ascii_letters) for i in range(40)])
 
 def test_add_fetch_row():
+	global table_name
 	table = SkydbTable(table_name=table_name, columns=['c1','c2'], seed="RANDOM SEED", verbose=1)
 
 	_ = table.add_row({'c1':'Data 1', 'c2': 'HoHoHo a'})
@@ -25,4 +26,3 @@ def test_add_fetch_row():
 	print(row)
 	assert (row[3]['c1'] == 'Data 4') and (row[3]['c2'] == 'HoHoHo d'), "Test Case Failed"
 
-test_add_fetch_row()
