@@ -222,9 +222,9 @@ class SkydbTable(object):
 							)
 				if condition_func(condition, k, data, self.column_split): # The value at the column matches the condition
 					keys_satisfy = True
-					break
 				else:
 					keys_satisfy = False
+					break
 
 
 			if keys_satisfy:
