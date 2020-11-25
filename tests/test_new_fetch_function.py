@@ -44,6 +44,7 @@ def test_fetch_1_rows():
 				n_rows=2,
 				condition_func=_value_in
 			)
+	print(rows)
 	assert len(rows) == 1, "Test case failed. The fetched rows is not the same as n_rows"
 	print("-"*40)
 	print(rows)
@@ -51,16 +52,4 @@ def test_fetch_1_rows():
 	for k in rows:
 		assert rows[k]['col1'].split(';')[0] == 'Data-5', "Test case failed. Invalid Data retreived"
 		assert rows[k]['col1'].split(';')[2] == 'Data-7', "Test case failed. Invalid Data retreived"
-
-def test_fetch_0_rows():
-	global table, row_index
-	rows = table.fetch(
-				condition={'col1':['c1','Data-5'], 'col1':['c3','Data-10']},
-				start_index=row_index,
-				n_rows=2,
-				condition_func=_value_in
-			)
-	assert len(rows) == 0, "Test case failed. The fetched rows is not the same as n_rows"
-	print("-"*40)
-	print(rows)
 

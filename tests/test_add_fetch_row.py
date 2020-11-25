@@ -26,3 +26,4 @@ def test_add_fetch_row():
 	print(row)
 	assert (row[3]['c1'] == 'Data 4') and (row[3]['c2'] == 'HoHoHo d'), "Test Case Failed"
 
+#test_add_fetch_row()
