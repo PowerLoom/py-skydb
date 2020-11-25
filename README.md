@@ -22,11 +22,11 @@ print(table.fetch_row(row_index=2))
 print(table.fetch_row(row_index=3))
 
 # The start_index refers to the index from where you want to start fetching rows. The function will fetch rows which match the condition from start_index to 0 
-print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=1, num_workers=2)) # fetch one row
+print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=1)) # fetch one row
 
-print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=3, num_workers=2)) # fetch three rows
+print(table.fetch(condition={'c1':'Data 4'}, start_index=table.index-1, n_rows=3)) # fetch three rows
 
-print(table.fetch(condition={'c1':'Data 4','c2':'NewData'}, start_index=table.index-1, n_rows=3, num_workers=2)) 
+print(table.fetch(condition={'c1':'Data 4','c2':'NewData'}, start_index=table.index-1, n_rows=3)) 
 
 # Update the row with new data
 table.update_row(row_index=5, data={'c1':'SomeNewUpdateData'})
@@ -39,6 +39,22 @@ if out is None:
 	print("The table does not exist")
 else:
 	print(f"The table exists at index {out[0]}, with revision {out[1]}")
+
+
+""" Batch adding and fetching of rows """
+# Add 20 rows to the table
+rows = []
+for i in range(20):
+	row = {}
+	row['c1'] = ''.join([choice(ascii_letters) for i in range(7)])
+	row['c2'] = ''.join([choice(ascii_letters) for i in range(7)])
+
+	rows.append(row)
+
+table.add_rows(rows)
+
+# Fetch first 15 rows
+out = table.fetch_rows(list(range(15)))
 	
 	
 """ Using a condition function """
