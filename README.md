@@ -63,7 +63,7 @@ def check_start_D(condition, key, value, column_split) -> bool:
         return False
 	
 row = table.fetch(
-	    condtion={'c1':''}, # Leave it empty if you dont want to match any kind of text
+	    condition={'c1':''}, # Leave it empty if you dont want to match any kind of text
 	    start_index=table.index-1, # The table.index-1 gives you the index of the last added row
 	    n_rows=2,
 	    condition_func=check_start_D # Your condition function
