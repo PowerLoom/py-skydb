@@ -13,7 +13,8 @@ install_requires = [
 		"six==1.15.0",
 		"urllib3==1.26.2",
 		"tenacity",
-		"pytest"
+		"pytest",
+		"aiohttp",
 	]
 
 classifiers = [
