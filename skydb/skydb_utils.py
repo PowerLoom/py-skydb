@@ -16,6 +16,7 @@ from urllib.parse import urljoin
 import logging
 import sys
 import asyncio
+from typing import Optional
 
 
 def _equal(condition: dict, key: str, value: str, column_split: list = None) -> bool:
@@ -34,7 +35,14 @@ class SkydbTable(object):
     edit_rows, fetchone, fetchall
     """
 
-    def __init__(self, table_name: str, columns: list, seed: str, column_split: list = [], verbose=0):
+    def __init__(
+        self,
+        table_name: str,
+        columns: list,
+        seed: str,
+        column_split: Optional[list] = None,
+        verbose: int = 0
+    ):
         """
         Args:
             table_name(str): This is the name of the table and will also act as key in the
@@ -52,6 +60,9 @@ class SkydbTable(object):
             column_split(list): If you are making a single column hold all the values in the row seperated by
             ';', column_split will hold the column names for each of the single values
         """
+        if not column_split:
+            column_split = []
+
         self.table_name = table_name
         self.seed = seed
         self.columns = columns
