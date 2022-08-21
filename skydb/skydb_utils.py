@@ -18,7 +18,7 @@ import sys
 import asyncio
 
 
-def _equal(condition: dict, key: str, value: str, column_split: list = None) -> bool:
+def _equal(condition: dict, key: str, value: str, *args, **kwargs) -> bool:
     return condition[key] == value
 
 
@@ -85,7 +85,7 @@ class SkydbTable(object):
         try:
             index, revision = registry.get_entry(f"INDEX:{table_name}", timeout=5)
             return int(index), revision
-        except Timeout as T:
+        except Timeout:
             return None
 
     def calibrate_index(self):
@@ -105,7 +105,7 @@ class SkydbTable(object):
         try:
             index, revision = self.registry.get_entry(f"INDEX:{self.table_name}", timeout=5)
             return int(index), revision
-        except Timeout as T:
+        except Timeout:
             self.logger.debug("Initializing the index...")
             self.registry.set_entry(data_key=f"INDEX:{self.table_name}", data=f"{0}", revision=1)
             return (0, 1)
@@ -192,7 +192,6 @@ class SkydbTable(object):
                     raise ValueError(f"Column {k} is empty")
 
         tasks = []
-        row_indices = []
         idx = self.index
         for row in rows:
             for c in row:
@@ -238,7 +237,7 @@ class SkydbTable(object):
         self.logger.debug("Updating row at index: " + str(row_index))
         self.logger.debug(data)
         for k in data.keys():
-            old_data, revision = self.registry.get_entry(
+            _, revision = self.registry.get_entry(
                 data_key=f"{self.table_name}:{k}:{row_index}",
             )
             self.registry.set_entry(
@@ -260,7 +259,7 @@ class SkydbTable(object):
         self.logger.debug("Fetching row at index: " + str(row_index))
         row = {}
         for c in self.columns:
-            data, revision = self.registry.get_entry(data_key=f"{self.table_name}:{c}:{row_index}")
+            data, _ = self.registry.get_entry(data_key=f"{self.table_name}:{c}:{row_index}")
             row[c] = data
         return row
 
@@ -333,7 +332,7 @@ class SkydbTable(object):
             resp_data = await self.registry.aio_get_entry(
                 data_key=f"{self.table_name}:{k}:{work_index}"
             )
-            data, revision = resp_data[f"{self.table_name}:{k}:{work_index}"]
+            data, _ = resp_data[f"{self.table_name}:{k}:{work_index}"]
             if condition_func(condition, k, data,
                               self.column_split):  # The value at the column matches the condition
                 keys_satisfy = True
@@ -563,7 +562,7 @@ class RegistryEntry(object):
                     """)
 
 
-    async def aio_get_entry(self, data_key: str, timeout: int = 30,) -> str:
+    async def aio_get_entry(self, data_key: str, *args, **kwargs) -> str:
         """
             - Used aio requests to get data from skydb
         """
